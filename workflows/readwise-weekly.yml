@@ -6,7 +6,12 @@ on:
       const fs = require("fs")
 
       const counterPath = "state/readwise-weekly.counter"
-      const current = Number(fs.readFileSync(counterPath, "utf8").trim() || "0")
+      let current = 0
+      try {
+        current = Number(fs.readFileSync(counterPath, "utf8").trim() || "0")
+      } catch (e) {
+        current = 0
+      }
       const next = current + 1
       const link = `https://wise.readwise.io/issues/wisereads-vol-${next}/`
 
@@ -15,6 +20,7 @@ on:
           validateStatus: () => true,
           maxRedirects: 5,
         })
+        console.log("fetch:", link, "status:", response.status)
 
         if (response.status !== 200) {
           return []
@@ -52,14 +58,15 @@ jobs:
       - name: Make a HTTP Request
         uses: actionsflow/axios@v1
         with:
-          url: 你的 Cubox API 链接
+          url: ${{ secrets.cubox_url }}
           method: POST
           body: |
             {
               "type":"url",
               "content":"${{ on.script.outputs.link }}",
               "title":"${{ on.script.outputs.title }}",
-              "folder":"你希望保存文章的文件夹"
+              "folder":"AI",
+              "tags":["AI", "rss"]
             }
 
   update_counter:
