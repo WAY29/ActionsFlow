@@ -1,0 +1,100 @@
+name: actionsflow
+
+on:
+  script:
+    run: |
+      const fs = require("fs")
+
+      const counterPath = "state/readwise-weekly.counter"
+      const current = Number(fs.readFileSync(counterPath, "utf8").trim() || "0")
+      const next = current + 1
+      const link = `https://wise.readwise.io/issues/wisereads-vol-${next}/`
+
+      try {
+        const response = await helpers.axios.get(link, {
+          validateStatus: () => true,
+          maxRedirects: 5,
+        })
+
+        if (response.status !== 200) {
+          return []
+        }
+
+        const titleMatch = response.data.match(/<title>([^<]+)<\/title>/i)
+        const title = titleMatch ? titleMatch[1].trim() : `Wise Reads Vol. ${next}`
+
+        return [
+          {
+            id: `wisereads-vol-${next}`,
+            issue: next,
+            link,
+            title,
+          },
+        ]
+      } catch (error) {
+        return []
+      }
+    deduplicationKey: id
+
+concurrency:
+  group: actionsflow-readwise-weekly
+  cancel-in-progress: false
+
+jobs:
+  request:
+    name: Push to Cubox
+    runs-on: ubuntu-latest
+    steps:
+      - name: Debug script outputs
+        run: |
+          echo 'script outputs: ${{ toJson(on.script.outputs) }}'
+
+      - name: Make a HTTP Request
+        uses: actionsflow/axios@v1
+        with:
+          url: 你的 Cubox API 链接
+          method: POST
+          body: |
+            {
+              "type":"url",
+              "content":"${{ on.script.outputs.link }}",
+              "title":"${{ on.script.outputs.title }}",
+              "folder":"你希望保存文章的文件夹"
+            }
+
+  update_counter:
+    name: Update weekly counter
+    runs-on: ubuntu-latest
+    needs: request
+    permissions:
+      contents: write
+    outputs:
+      counter: ${{ steps.write_counter.outputs.counter }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Write latest issue number
+        id: write_counter
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p state
+          counter="${{ on.script.outputs.issue }}"
+          echo "$counter" > state/readwise-weekly.counter
+          echo "counter=$counter" >> "$GITHUB_OUTPUT"
+
+      - name: Debug counter and script outputs
+        run: |
+          echo "counter: ${{ steps.write_counter.outputs.counter }}"
+          echo 'script outputs: ${{ toJson(on.script.outputs) }}'
+
+      - name: Commit & push
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add state/readwise-weekly.counter
+          git commit -m "chore: bump readwise-weekly counter to ${{ steps.write_counter.outputs.counter }}" || exit 0
+          git push
