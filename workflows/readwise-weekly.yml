@@ -72,7 +72,7 @@ jobs:
   update_counter:
     name: Update weekly counter
     runs-on: ubuntu-latest
-    needs: request
+    needs: [request]
     permissions:
       contents: write
     outputs:
