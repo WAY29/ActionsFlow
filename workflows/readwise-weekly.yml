@@ -1,5 +1,8 @@
 name: actionsflow
 
+permissions:
+  contents: write
+
 on:
   script:
     run: |
