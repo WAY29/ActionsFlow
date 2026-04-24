@@ -1,0 +1,33 @@
+name: actionsflow
+
+permissions:
+  contents: read
+
+on:
+  rss:
+    url: https://www.bestblogs.dev/zh/feeds/rss/daily-brief
+    config:
+      every: 720
+
+concurrency:
+  group: actionsflow-bestblogs-daily-brief
+  cancel-in-progress: false
+
+jobs:
+  request:
+    name: Push to Cubox
+    runs-on: ubuntu-latest
+    steps:
+      - name: Make a HTTP Request
+        uses: actionsflow/axios@v1
+        with:
+          url: ${{ secrets.CUBOX_URL }}
+          method: POST
+          body: |
+            {
+              "type":"url",
+              "content":"${{ on.rss.outputs.link }}",
+              "title":"${{ on.rss.outputs.title }}",
+              "folder":"AI",
+              "tags":["AI", "rss", "bestblogs"]
+            }

@@ -63,7 +63,7 @@ jobs:
       - name: Make a HTTP Request
         uses: actionsflow/axios@v1
         with:
-          url: ${{ secrets.COBOX_URL }}
+          url: ${{ secrets.CUBOX_URL }}
           method: POST
           body: |
             {
