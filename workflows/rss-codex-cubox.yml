@@ -8,7 +8,7 @@ on:
     path: ./rss-codex-cubox/scripts/fetch_feed_items.js
     deduplicationKey: id
     config:
-      every: 60
+      every: 180
       outputsMode: combine
       exportOutputs: true
 
