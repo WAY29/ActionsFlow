@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   request:
-    name: Push to Cubox
+    name: bestblogs daily brief - Push to Cubox
     runs-on: ubuntu-latest
     steps:
       - name: Make a HTTP Request

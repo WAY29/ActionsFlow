@@ -53,7 +53,7 @@ concurrency:
 
 jobs:
   request:
-    name: Push to Cubox
+    name: readwise weekly - Push to Cubox
     runs-on: ubuntu-latest
     steps:
       - name: Debug script outputs

@@ -25,13 +25,13 @@ jobs:
         with:
           clean: false
 
-      - name: Prepare Codex prompt
+      - name: ak-rss - Prepare Codex prompt
         id: prepare
         env:
           OUTPUTS_PATH: ${{ on.script.outputs.path }}
         run: node rss-codex-cubox/scripts/build_prompt.js
 
-      - name: Run GPT-5.4 digest scoring
+      - name: ak-rss - Run GPT-5.4 digest scoring
         id: codex
         env:
           PROMPT_FILE: ${{ steps.prepare.outputs.prompt_path }}
@@ -42,7 +42,7 @@ jobs:
           OPENAI_REASONING_EFFORT: medium
         run: node rss-codex-cubox/scripts/run_codex.js
 
-      - name: Push top items to Cubox
+      - name: ak-rss - Push to Cubox
         env:
           CODEX_OUTPUT_FILE: .tmp/rss-codex-cubox/codex-output.json
           INPUT_ITEMS_FILE: ${{ steps.prepare.outputs.input_path }}
