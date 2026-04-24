@@ -1,0 +1,50 @@
+name: actionsflow
+
+permissions:
+  contents: read
+
+on:
+  script:
+    path: ./rss-codex-cubox/scripts/fetch_feed_items.js
+    deduplicationKey: id
+    config:
+      every: 60
+      outputsMode: combine
+      exportOutputs: true
+
+concurrency:
+  group: actionsflow-rss-codex-cubox
+  cancel-in-progress: false
+
+jobs:
+  digest:
+    name: Summarize RSS and Push to Cubox
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare Codex prompt
+        id: prepare
+        env:
+          OUTPUTS_PATH: ${{ on.script.outputs.path }}
+        run: node rss-codex-cubox/scripts/build_prompt.js
+
+      - name: Run GPT-5.4 digest scoring
+        id: codex
+        env:
+          PROMPT_FILE: ${{ steps.prepare.outputs.prompt_path }}
+          OUTPUT_FILE: .tmp/rss-codex-cubox/codex-output.json
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_API_BASE_URL: ${{ secrets.OPENAI_API_BASE_URL }}
+          OPENAI_MODEL: gpt-5.4
+          OPENAI_REASONING_EFFORT: medium
+        run: node rss-codex-cubox/scripts/run_codex.js
+
+      - name: Push top items to Cubox
+        env:
+          CODEX_OUTPUT_FILE: .tmp/rss-codex-cubox/codex-output.json
+          INPUT_ITEMS_FILE: ${{ steps.prepare.outputs.input_path }}
+          CUBOX_URL: ${{ secrets.CUBOX_URL }}
+          CUBOX_FOLDER: AI
+          CUBOX_TAGS: AI,rss
+        run: node rss-codex-cubox/scripts/publish_to_cubox.js

@@ -25,6 +25,8 @@ jobs:
     concurrency: actionsflow
     steps:
       - uses: actions/checkout@v3
+      - name: Install workspace dependencies
+        run: npm ci
       - name: Run Actionsflow
         uses: actionsflow/actionsflow-action@v1.3.0
         with:

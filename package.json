@@ -5,7 +5,8 @@
   "version": "1.0.2",
   "author": "Owen Young <theowenyoung@gmail.com>",
   "devDependencies": {
-    "actionsflow": "^1.12.1"
+    "actionsflow": "^1.12.1",
+    "fast-xml-parser": "^5.5.11"
   },
   "keywords": [
     "actionsflow",
@@ -26,5 +27,8 @@
   },
   "bugs": {
     "url": "https://github.com/actionsflow/actionsflow-workflow-default/issues"
+  },
+  "dependencies": {
+    "openai": "^6.34.0"
   }
 }
