@@ -44,6 +44,8 @@ on:
         return []
       }
     deduplicationKey: id
+    config:
+      every: 720
 
 concurrency:
   group: actionsflow-readwise-weekly
