@@ -330,6 +330,7 @@ test -d "$DEST/workflows" || {
 }
 cmd=(
   act
+  --env LOCAL_ACTIONSFLOW_DEBUG=true
   --workflows "$DEST/workflows"
   --secret-file "$DEST/.secrets"
   --eventpath "$DEST/event.json"
