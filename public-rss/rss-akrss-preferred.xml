@@ -2,10 +2,95 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>AK RSS Preferred</title>
-    <link>https://rss.longlone.de5.net</link>
+    <link>http://rss.longlone.de5.net</link>
     <description>Codex-curated preferred RSS items</description>
     <language>zh-CN</language>
-    <lastBuildDate>Sat, 25 Apr 2026 00:00:00 GMT</lastBuildDate>
-    <atom:link href="https://rss.longlone.de5.net/rss-akrss-preferred.xml" rel="self" type="application/rss+xml"/>
+    <lastBuildDate>Sat, 25 Apr 2026 04:15:32 GMT</lastBuildDate>
+    <atom:link href="http://rss.longlone.de5.net/rss-akrss-preferred.xml" rel="self" type="application/rss+xml"/>
+    <item>
+      <title>The people do not yearn for automation</title>
+      <guid isPermaLink="true">https://simonwillison.net/2026/Apr/24/the-people-do-not-yearn-for-automation/#atom-everything</guid>
+      <pubDate>Fri, 24 Apr 2026 22:38:49 GMT</pubDate>
+      <link>https://simonwillison.net/2026/Apr/24/the-people-do-not-yearn-for-automation/#atom-everything</link>
+      <description>(8.6/10) 文章转引 Nilay Patel 的评论，解释为何公众一边大量使用 ChatGPT，一边仍普遍反感 AI。核心观点是“软件脑”把人和社会都当成待自动化的信息流，这种价值观本身让人抗拒。</description>
+    </item>
+    <item>
+      <title>Premium: How OpenAI Kills Oracle</title>
+      <guid isPermaLink="true">https://www.wheresyoured.at/how-openai-kills-oracle/</guid>
+      <pubDate>Fri, 24 Apr 2026 16:40:45 GMT</pubDate>
+      <link>https://www.wheresyoured.at/how-openai-kills-oracle/</link>
+      <description>(8.8/10) 文章从算力、云和企业软件权力结构切入，讨论 OpenAI 如何侵蚀 Oracle 的位置。重点不是产品对比，而是 AI 基础设施重组后谁能掌握企业预算与平台控制权。</description>
+    </item>
+    <item>
+      <title>An update on recent Claude Code quality reports</title>
+      <guid isPermaLink="true">https://simonwillison.net/2026/Apr/24/recent-claude-code-quality-reports/#atom-everything</guid>
+      <pubDate>Fri, 24 Apr 2026 01:31:25 GMT</pubDate>
+      <link>https://simonwillison.net/2026/Apr/24/recent-claude-code-quality-reports/#atom-everything</link>
+      <description>(8.1/10) 这篇文章解读 Anthropic 对 Claude Code 质量下滑的复盘，指出问题主要出在工具链而非模型本身。它揭示了代理式编码体验常被缓存、上下文清理和执行环境等外部环节拖垮。</description>
+    </item>
+    <item>
+      <title>Software engineering may no longer be a lifetime career</title>
+      <guid isPermaLink="true">https://seangoedecke.com/software-engineering-may-no-longer-be-a-lifetime-career/</guid>
+      <pubDate>Fri, 24 Apr 2026 00:00:00 GMT</pubDate>
+      <link>https://seangoedecke.com/software-engineering-may-no-longer-be-a-lifetime-career/</link>
+      <description>(8.2/10) 作者讨论软件工程是否会因 AI 而不再是可做一生的职业。重点不在夸大替代，而在分析职业稳定性、技能半衰期与行业结构将如何变化。</description>
+    </item>
+    <item>
+      <title>Nilay Patel: ‘Beware Software Brain’</title>
+      <guid isPermaLink="true">https://www.theverge.com/podcast/917029/software-brain-ai-backlash-databases-automation</guid>
+      <pubDate>Thu, 23 Apr 2026 20:13:49 GMT</pubDate>
+      <link>https://www.theverge.com/podcast/917029/software-brain-ai-backlash-databases-automation</link>
+      <description>(8.7/10) Nilay Patel 认为公众对 AI 的反感，源于科技行业试图用数据库和自动化逻辑重写一切人类流程。文章把 AI 反弹解释为对“软件脑”世界观的抵触，而不只是对某个模型的讨厌。</description>
+    </item>
+    <item>
+      <title>Do you really want the US to “win” AI?</title>
+      <guid isPermaLink="true">https://geohot.github.io//blog/jekyll/update/2026/04/23/us-win-ai.html</guid>
+      <pubDate>Wed, 22 Apr 2026 16:00:00 GMT</pubDate>
+      <link>https://geohot.github.io//blog/jekyll/update/2026/04/23/us-win-ai.html</link>
+      <description>(8.1/10) 作者质疑“让美国赢得 AI”这类口号，认为它默认把权力集中和技术霸权当成好事。文章从价值观而非性能竞赛出发，追问 AI 发展究竟在为谁服务。</description>
+    </item>
+    <item>
+      <title>AI and Teaching – The Brave New World</title>
+      <guid isPermaLink="true">https://steveblank.com/2026/04/22/ai-and-teaching-the-brave-new-world/</guid>
+      <pubDate>Wed, 22 Apr 2026 15:34:09 GMT</pubDate>
+      <link>https://steveblank.com/2026/04/22/ai-and-teaching-the-brave-new-world/</link>
+      <description>(8.0/10) Steve Blank 记录斯坦福课堂中 AI 对教学与学生工作方式带来的突变。文章强调这不是工具升级，而是课程设计、团队协作和学习目标都要重写。</description>
+    </item>
+    <item>
+      <title>An AI Odyssey, Part 4: Astounding Coding Agents</title>
+      <guid isPermaLink="true">https://www.johndcook.com/blog/2026/04/21/an-ai-odyssey-part-4-astounding-coding-agents/</guid>
+      <pubDate>Tue, 21 Apr 2026 20:14:40 GMT</pubDate>
+      <link>https://www.johndcook.com/blog/2026/04/21/an-ai-odyssey-part-4-astounding-coding-agents/</link>
+      <description>(8.3/10) 作者基于亲身使用，回顾近几个月编码代理能力的明显跃迁。文章聚焦它们在真实代码库中的进步、边界与主观体验，而不是只看基准分数。</description>
+    </item>
+    <item>
+      <title>AI has no moat</title>
+      <guid isPermaLink="true">https://geohot.github.io//blog/jekyll/update/2026/04/22/ai-has-no-moat.html</guid>
+      <pubDate>Tue, 21 Apr 2026 16:00:00 GMT</pubDate>
+      <link>https://geohot.github.io//blog/jekyll/update/2026/04/22/ai-has-no-moat.html</link>
+      <description>(8.0/10) 作者认为 AI 产品护城河被严重高估，模型与编码代理的差异更多来自封装和分发而非不可复制的核心能力。文章用尖锐口吻质疑高估值与平台垄断叙事能否持续。</description>
+    </item>
+    <item>
+      <title>brief</title>
+      <guid isPermaLink="true">https://nesbitt.io/2026/04/21/brief.html</guid>
+      <pubDate>Tue, 21 Apr 2026 10:00:00 GMT</pubDate>
+      <link>https://nesbitt.io/2026/04/21/brief.html</link>
+      <description>(8.9/10) 文章主张仓库应提供面向人类与 AI 编码代理的简明运行说明，回答依赖、测试、规范与风险点等关键问题。它把 repo brief 视为降低代理失误、加速上手和提升协作质量的基础设施。</description>
+    </item>
+    <item>
+      <title>Headless everything for personal AI</title>
+      <guid isPermaLink="true">https://simonwillison.net/2026/Apr/19/headless-everything/#atom-everything</guid>
+      <pubDate>Sun, 19 Apr 2026 21:46:38 GMT</pubDate>
+      <link>https://simonwillison.net/2026/Apr/19/headless-everything/#atom-everything</link>
+      <description>(8.4/10) 这篇文章讨论“无头服务”为何会因个人 AI 助手兴起而普及，即让 API 直接成为界面。核心判断是代理调用结构化服务会比操纵网页更快、更稳，也更符合未来产品形态。</description>
+    </item>
+    <item>
+      <title>Figma&apos;s woes compound with Claude Design</title>
+      <guid isPermaLink="true">https://martinalderson.com/posts/figmas-woes-compound-with-claude-design/?utm_source=rss&amp;utm_medium=rss&amp;utm_campaign=feed</guid>
+      <pubDate>Sun, 19 Apr 2026 00:00:00 GMT</pubDate>
+      <link>https://martinalderson.com/posts/figmas-woes-compound-with-claude-design/?utm_source=rss&amp;utm_medium=rss&amp;utm_campaign=feed</link>
+      <description>(8.0/10) 文章指出 Figma 依赖大量非设计师席位的增长模式，在生成式设计工具出现后变得格外脆弱。Claude Design 让“无需专业设计流程也能产出界面”更可行，从而直接冲击其商业基础。</description>
+    </item>
   </channel>
 </rss>
+
