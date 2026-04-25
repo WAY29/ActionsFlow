@@ -25,6 +25,13 @@ jobs:
         with:
           clean: false
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
       - name: ak-rss - Prepare Codex prompt
         id: prepare
         env:

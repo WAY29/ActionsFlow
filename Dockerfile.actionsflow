@@ -1,0 +1,15 @@
+ARG BASE_IMAGE=actionsflow/actionsflow
+FROM ${BASE_IMAGE}
+
+USER root
+
+COPY docker/act-wrapper.sh /usr/local/bin/act-wrapper
+
+RUN set -eux; \
+  curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/nektos/act/master/install.sh \
+    | bash -s -- -b /usr/local/bin; \
+  mv /usr/local/bin/act /usr/local/bin/act.real; \
+  chmod +x /usr/local/bin/act-wrapper; \
+  ln -s /usr/local/bin/act-wrapper /usr/local/bin/act; \
+  act --version; \
+  act.real --version
