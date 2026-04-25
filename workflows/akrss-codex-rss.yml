@@ -13,12 +13,12 @@ on:
       exportOutputs: true
 
 concurrency:
-  group: actionsflow-rss-codex-cubox
+  group: actionsflow-rss-codex-rss
   cancel-in-progress: false
 
 jobs:
   digest:
-    name: Summarize RSS and Push to Cubox
+    name: ak-rss-rss - Summarize RSS and Publish RSS Feed
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -30,15 +30,15 @@ jobs:
           node-version: 20
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --omit=dev
 
-      - name: ak-rss - Prepare Codex prompt
+      - name: ak-rss-rss - Prepare Codex prompt
         id: prepare
         env:
           OUTPUTS_PATH: ${{ on.script.outputs.path }}
         run: node rss-codex-cubox/scripts/build_prompt.js
 
-      - name: ak-rss - Run GPT-5.4 digest scoring
+      - name: ak-rss-rss - Run GPT-5.4 digest scoring
         id: codex
         env:
           PROMPT_FILE: ${{ steps.prepare.outputs.prompt_path }}
@@ -49,11 +49,22 @@ jobs:
           OPENAI_REASONING_EFFORT: medium
         run: node rss-codex-cubox/scripts/run_codex.js
 
-      - name: ak-rss - Push to Cubox
+      - name: ak-rss-rss - Build merged RSS feed
+        id: rss
         env:
           CODEX_OUTPUT_FILE: .tmp/rss-codex-cubox/codex-output.json
           INPUT_ITEMS_FILE: ${{ steps.prepare.outputs.input_path }}
-          CUBOX_URL: ${{ secrets.CUBOX_URL }}
-          CUBOX_FOLDER: AI
-          CUBOX_TAGS: AI,rss
-        run: node rss-codex-cubox/scripts/publish_to_cubox.js
+          RSS_PUBLIC_URL: ${{ secrets.RSS_PUBLIC_URL }}
+          RSS_OUTPUT_DIR: .tmp/rss-codex-rss/public
+          RSS_TITLE: AK RSS Preferred
+          RSS_DESCRIPTION: Codex-curated preferred RSS items
+          RSS_MAX_ITEMS: 50
+        run: node rss-codex-cubox/scripts/build_rss_feed.js
+
+      - name: ak-rss-rss - Deploy RSS feed to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4"
+          command: pages deploy .tmp/rss-codex-rss/public --project-name=${{ secrets.CLOUDFLARE_PAGES_PROJECT_NAME }}
