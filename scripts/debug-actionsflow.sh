@@ -313,6 +313,11 @@ build({
   process.exit(1)
 })
 NODE
+if [ -f "$PROJECT/.secrets" ]; then
+  cp "$PROJECT/.secrets" "$DEST/.secrets"
+  chmod 600 "$DEST/.secrets" 2>/dev/null || true
+  printf "[BUILD] 已同步本地 secrets 到 %s/.secrets\n" "$DEST"
+fi
 printf "[BUILD] 生成文件:\n"
 find "$DEST" -maxdepth 3 -type f -print | sort
 '
@@ -328,6 +333,9 @@ test -d "$DEST/workflows" || {
   printf "[ERROR] 缺少 %s/workflows；先运行 build\n" "$DEST"
   exit 1
 }
+if ! grep -q "^GITHUB_TOKEN=" "$DEST/.secrets" 2>/dev/null; then
+  printf "[WARN] %s/.secrets 缺少 GITHUB_TOKEN；包含 git push 的 workflow 会认证失败\n" "$DEST"
+fi
 cmd=(
   act
   --env LOCAL_ACTIONSFLOW_DEBUG=true

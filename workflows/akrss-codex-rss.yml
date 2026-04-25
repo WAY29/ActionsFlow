@@ -24,6 +24,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           clean: false
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: actions/setup-node@v4
         with:
@@ -71,6 +72,8 @@ jobs:
 
       - name: ak-rss-rss - Commit RSS feed
         shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
@@ -78,4 +81,4 @@ jobs:
 
           git add public-rss/rss-akrss-preferred.xml public-rss/_headers
           git commit -m "chore: update ak rss feed" || exit 0
-          git push
+          bash scripts/git-push-with-token.sh

@@ -84,6 +84,8 @@ jobs:
       counter: ${{ steps.write_counter.outputs.counter }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: actions/setup-node@v4
         with:
@@ -154,6 +156,8 @@ jobs:
 
       - name: Commit & push
         shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
@@ -161,4 +165,4 @@ jobs:
 
           git add state/readwise-weekly.counter public-rss/readwise-weekly.xml public-rss/_headers
           git commit -m "chore: update readwise weekly to ${{ steps.write_counter.outputs.counter }}" || exit 0
-          git push
+          bash scripts/git-push-with-token.sh
