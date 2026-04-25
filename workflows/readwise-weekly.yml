@@ -85,6 +85,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci --omit=dev
+
       - name: Write latest issue number
         id: write_counter
         shell: bash
@@ -95,9 +102,47 @@ jobs:
           echo "$counter" > state/readwise-weekly.counter
           echo "counter=$counter" >> "$GITHUB_OUTPUT"
 
+      - name: Build readwise RSS input
+        shell: bash
+        env:
+          READWISE_TITLE: ${{ on.script.outputs.title }}
+          READWISE_LINK: ${{ on.script.outputs.link }}
+        run: |
+          set -euo pipefail
+          mkdir -p .tmp/readwise-weekly
+          node <<'NODE'
+          const fs = require("fs")
+
+          const title = (process.env.READWISE_TITLE || "").trim()
+          const link = (process.env.READWISE_LINK || "").trim()
+
+          if (!title || !link) {
+            throw new Error("Missing readwise title or link")
+          }
+
+          fs.writeFileSync(
+            ".tmp/readwise-weekly/items.json",
+            `${JSON.stringify([{ title, link }], null, 2)}\n`
+          )
+          NODE
+
+      - name: Build readwise RSS feed
+        id: rss
+        env:
+          RSS_PUBLIC_URL: ${{ secrets.RSS_PUBLIC_URL }}
+          RSS_OUTPUT_DIR: public-rss
+          RSS_FILENAME: readwise-weekly.xml
+          RSS_ITEMS_FILE: .tmp/readwise-weekly/items.json
+          RSS_TITLE: Readwise Weekly
+          RSS_DESCRIPTION: Weekly Wise Reads issues
+          RSS_MAX_ITEMS: 100
+        run: node rss-codex-cubox/scripts/build_rss_feed.js
+
       - name: Debug counter and script outputs
         run: |
           echo "counter: ${{ steps.write_counter.outputs.counter }}"
+          echo "feed_url: ${{ steps.rss.outputs.feed_url }}"
+          echo "item_count: ${{ steps.rss.outputs.item_count }}"
           echo 'script outputs: ${{ toJson(on.script.outputs) }}'
 
       - name: Commit & push
@@ -107,6 +152,6 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add state/readwise-weekly.counter
-          git commit -m "chore: bump readwise-weekly counter to ${{ steps.write_counter.outputs.counter }}" || exit 0
+          git add state/readwise-weekly.counter public-rss/readwise-weekly.xml public-rss/_headers
+          git commit -m "chore: update readwise weekly to ${{ steps.write_counter.outputs.counter }}" || exit 0
           git push

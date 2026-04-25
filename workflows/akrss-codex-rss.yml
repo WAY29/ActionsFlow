@@ -1,7 +1,7 @@
 name: actionsflow
 
 permissions:
-  contents: read
+  contents: write
 
 on:
   script:
@@ -55,16 +55,20 @@ jobs:
           CODEX_OUTPUT_FILE: .tmp/rss-codex-cubox/codex-output.json
           INPUT_ITEMS_FILE: ${{ steps.prepare.outputs.input_path }}
           RSS_PUBLIC_URL: ${{ secrets.RSS_PUBLIC_URL }}
-          RSS_OUTPUT_DIR: .tmp/rss-codex-rss/public
+          RSS_OUTPUT_DIR: public-rss
+          RSS_FILENAME: rss-akrss-preferred.xml
           RSS_TITLE: AK RSS Preferred
           RSS_DESCRIPTION: Codex-curated preferred RSS items
           RSS_MAX_ITEMS: 50
         run: node rss-codex-cubox/scripts/build_rss_feed.js
 
-      - name: ak-rss-rss - Deploy RSS feed to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          wranglerVersion: "4"
-          command: pages deploy .tmp/rss-codex-rss/public --project-name=${{ secrets.CLOUDFLARE_PAGES_PROJECT_NAME }}
+      - name: ak-rss-rss - Commit RSS feed
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add public-rss/rss-akrss-preferred.xml public-rss/_headers
+          git commit -m "chore: update ak rss feed" || exit 0
+          git push

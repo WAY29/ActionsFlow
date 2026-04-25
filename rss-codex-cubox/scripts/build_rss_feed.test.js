@@ -1,12 +1,18 @@
 const assert = require("node:assert/strict")
+const fs = require("node:fs")
+const os = require("node:os")
+const path = require("node:path")
 const test = require("node:test")
 const { XMLParser, XMLValidator } = require("fast-xml-parser")
 
 const {
   RSS_FILENAME,
+  buildAndWriteRssFeed,
   buildCurrentItems,
+  buildDirectItems,
   fetchExistingRss,
   mergeItems,
+  normalizeRssFilename,
   normalizePublicUrl,
   parseExistingRss,
   renderRssXml,
@@ -19,7 +25,7 @@ const TEST_RSS_PARSER = new XMLParser({
   parseTagValue: false,
 })
 
-test("normalizePublicUrl accepts only a root site URL and appends the fixed feed filename", () => {
+test("normalizePublicUrl accepts only a root site URL and appends the feed filename", () => {
   assert.deepEqual(normalizePublicUrl("ak.example.com"), {
     origin: "https://ak.example.com",
     feedUrl: `https://ak.example.com/${RSS_FILENAME}`,
@@ -30,8 +36,20 @@ test("normalizePublicUrl accepts only a root site URL and appends the fixed feed
     feedUrl: `https://ak.example.com/${RSS_FILENAME}`,
   })
 
+  assert.deepEqual(normalizePublicUrl("ak.example.com", { rssFilename: "readwise-weekly.xml" }), {
+    origin: "https://ak.example.com",
+    feedUrl: "https://ak.example.com/readwise-weekly.xml",
+  })
+
   assert.throws(() => normalizePublicUrl("https://ak.example.com/rss.xml"), /root domain/)
   assert.throws(() => normalizePublicUrl("https://ak.example.com/?v=1"), /root domain/)
+})
+
+test("normalizeRssFilename rejects path traversal and accepts simple XML names", () => {
+  assert.equal(normalizeRssFilename("readwise-weekly.xml"), "readwise-weekly.xml")
+  assert.throws(() => normalizeRssFilename("../readwise-weekly.xml"), /safe filename/)
+  assert.throws(() => normalizeRssFilename("feeds/readwise-weekly.xml"), /safe filename/)
+  assert.throws(() => normalizeRssFilename(""), /Missing RSS_FILENAME/)
 })
 
 test("buildCurrentItems validates Codex output and enriches it with input metadata", () => {
@@ -62,6 +80,31 @@ test("buildCurrentItems validates Codex output and enriches it with input metada
   assert.equal(items[0].pubDateMs, Date.parse("2026-04-24T01:02:03.000Z"))
   assert.equal(items[0].sourceTitle, "Source & Name")
   assert.equal(items[0].sourceUrl, "https://feed.example.com/rss.xml")
+})
+
+test("buildDirectItems converts plain RSS item input with build-time defaults", () => {
+  const defaultPubDateMs = Date.parse("2026-04-25T00:00:00.000Z")
+  const items = buildDirectItems(
+    [
+      {
+        title: "Wise Reads Vol. 10",
+        link: "https://wise.readwise.io/issues/wisereads-vol-10/",
+      },
+    ],
+    { defaultPubDateMs }
+  )
+
+  assert.deepEqual(items, [
+    {
+      title: "Wise Reads Vol. 10",
+      link: "https://wise.readwise.io/issues/wisereads-vol-10/",
+      guid: "https://wise.readwise.io/issues/wisereads-vol-10/",
+      description: "Wise Reads Vol. 10",
+      pubDateMs: defaultPubDateMs,
+      sourceTitle: "",
+      sourceUrl: "",
+    },
+  ])
 })
 
 test("parseExistingRss reads prior RSS items for history merging", () => {
@@ -204,4 +247,110 @@ test("fetchExistingRss treats 404 as first run and fails on other bad statuses",
       }),
     /Fetch existing RSS failed: 500/
   )
+})
+
+test("buildAndWriteRssFeed writes a named feed and merges local history", async () => {
+  const workspace = fs.mkdtempSync(path.join(os.tmpdir(), "rss-feed-test-"))
+  const outputDir = path.join(workspace, "public-rss")
+  const itemsPath = path.join(workspace, "items.json")
+
+  fs.mkdirSync(outputDir, { recursive: true })
+  fs.writeFileSync(
+    path.join(outputDir, "readwise-weekly.xml"),
+    renderRssXml({
+      title: "Readwise Weekly",
+      description: "Weekly Wise Reads",
+      siteUrl: "https://rss.example.com",
+      feedUrl: "https://rss.example.com/readwise-weekly.xml",
+      generatedAt: new Date("2026-04-18T00:00:00.000Z"),
+      items: [
+        {
+          title: "Wise Reads Vol. 9",
+          link: "https://wise.readwise.io/issues/wisereads-vol-9/",
+          guid: "https://wise.readwise.io/issues/wisereads-vol-9/",
+          description: "Wise Reads Vol. 9",
+          pubDateMs: Date.parse("2026-04-18T00:00:00.000Z"),
+        },
+      ],
+    })
+  )
+  fs.writeFileSync(
+    itemsPath,
+    `${JSON.stringify(
+      [
+        {
+          title: "Wise Reads Vol. 10",
+          link: "https://wise.readwise.io/issues/wisereads-vol-10/",
+        },
+      ],
+      null,
+      2
+    )}\n`
+  )
+
+  const result = await buildAndWriteRssFeed({
+    workspace,
+    itemsPath: "items.json",
+    publicUrl: "https://rss.example.com",
+    outputDir: "public-rss",
+    rssFilename: "readwise-weekly.xml",
+    title: "Readwise Weekly",
+    description: "Weekly Wise Reads",
+    maxItems: 10,
+    generatedAt: new Date("2026-04-25T00:00:00.000Z"),
+    fetchImpl: async () => {
+      throw new Error("local history should avoid network fetch")
+    },
+  })
+
+  const xml = fs.readFileSync(result.outputPath, "utf8")
+
+  assert.equal(result.feedUrl, "https://rss.example.com/readwise-weekly.xml")
+  assert.equal(result.itemCount, 2)
+  assert.equal(result.previousItemCount, 1)
+  assert.match(xml, /<atom:link href="https:\/\/rss\.example\.com\/readwise-weekly\.xml"/)
+  assert.match(xml, /<title>Wise Reads Vol\. 10<\/title>/)
+  assert.match(xml, /<title>Wise Reads Vol\. 9<\/title>/)
+  assert.equal(
+    fs.readFileSync(path.join(outputDir, "_headers"), "utf8"),
+    "/*.xml\n  Content-Type: application/rss+xml; charset=utf-8\n  Cache-Control: public, max-age=300\n"
+  )
+})
+
+test("buildAndWriteRssFeed treats missing local and unreachable remote history as first run", async () => {
+  const workspace = fs.mkdtempSync(path.join(os.tmpdir(), "rss-feed-test-"))
+
+  fs.writeFileSync(
+    path.join(workspace, "items.json"),
+    `${JSON.stringify(
+      [
+        {
+          title: "Wise Reads Vol. 10",
+          link: "https://wise.readwise.io/issues/wisereads-vol-10/",
+        },
+      ],
+      null,
+      2
+    )}\n`
+  )
+
+  const result = await buildAndWriteRssFeed({
+    workspace,
+    itemsPath: "items.json",
+    publicUrl: "https://deleted-pages.example.com",
+    outputDir: "public-rss",
+    rssFilename: "readwise-weekly.xml",
+    title: "Readwise Weekly",
+    description: "Weekly Wise Reads",
+    generatedAt: new Date("2026-04-25T00:00:00.000Z"),
+    fetchImpl: async () => {
+      throw new Error("fetch failed")
+    },
+  })
+
+  const xml = fs.readFileSync(result.outputPath, "utf8")
+
+  assert.equal(result.itemCount, 1)
+  assert.equal(result.previousItemCount, 0)
+  assert.match(xml, /<title>Wise Reads Vol\. 10<\/title>/)
 })

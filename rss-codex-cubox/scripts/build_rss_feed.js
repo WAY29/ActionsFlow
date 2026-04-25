@@ -4,7 +4,8 @@ const fs = require("fs")
 const path = require("path")
 const { XMLBuilder, XMLParser, XMLValidator } = require("fast-xml-parser")
 
-const RSS_FILENAME = "rss-akrss-preferred.xml"
+const DEFAULT_RSS_FILENAME = "rss-akrss-preferred.xml"
+const RSS_FILENAME = DEFAULT_RSS_FILENAME
 const DEFAULT_OUTPUT_DIR = ".tmp/rss-codex-rss/public"
 const DEFAULT_TITLE = "AK RSS Preferred"
 const DEFAULT_DESCRIPTION = "Codex-curated RSS recommendations"
@@ -58,8 +59,9 @@ function requireEnv(name) {
   return value
 }
 
-function normalizePublicUrl(value) {
+function normalizePublicUrl(value, options = {}) {
   const rawValue = requireValue(value, "RSS_PUBLIC_URL")
+  const rssFilename = normalizeRssFilename(options.rssFilename || RSS_FILENAME)
   const candidate = /^[a-z][a-z\d+.-]*:\/\//i.test(rawValue) ? rawValue : `https://${rawValue}`
   let parsed
 
@@ -80,7 +82,7 @@ function normalizePublicUrl(value) {
   const origin = parsed.origin
   return {
     origin,
-    feedUrl: `${origin}/${RSS_FILENAME}`,
+    feedUrl: `${origin}/${rssFilename}`,
   }
 }
 
@@ -92,6 +94,32 @@ function requireValue(value, name) {
   }
 
   return text
+}
+
+function normalizeRssFilename(value) {
+  const filename = requireValue(value, "RSS_FILENAME")
+
+  if (
+    filename === "." ||
+    filename === ".." ||
+    filename.includes("/") ||
+    filename.includes("\\") ||
+    filename.includes("\0")
+  ) {
+    throw new Error("RSS_FILENAME must be a safe filename")
+  }
+
+  return filename
+}
+
+function firstNonEmpty(...values) {
+  for (const value of values) {
+    const text = toSafeString(value)
+    if (text) {
+      return text
+    }
+  }
+  return ""
 }
 
 function normalizeScore(value) {
@@ -164,6 +192,45 @@ function buildCurrentItems(payload, inputItems) {
       pubDateMs,
       sourceTitle: toSafeString(metadata.feed_name),
       sourceUrl: toSafeString(metadata.feed_url),
+    }
+  })
+}
+
+function buildDirectItems(items, options = {}) {
+  if (!Array.isArray(items)) {
+    throw new Error("RSS items input must be an array")
+  }
+
+  const defaultPubDateMs = Number(options.defaultPubDateMs || Date.now())
+
+  return items.map((item, index) => {
+    const title = toSafeString(item.title)
+    const link = toSafeString(item.link)
+    const guid = firstNonEmpty(item.guid, link)
+    const description = firstNonEmpty(item.description, title)
+    const pubDateMs =
+      normalizePublishedAt(
+        firstNonEmpty(
+          item.pubDate,
+          item.published_at,
+          item.publishedAt,
+          item.published_local,
+          item.date
+        )
+      ) || defaultPubDateMs
+
+    if (!title || !link) {
+      throw new Error(`Invalid RSS item at index ${index}`)
+    }
+
+    return {
+      title,
+      link,
+      guid,
+      description,
+      pubDateMs,
+      sourceTitle: firstNonEmpty(item.sourceTitle, item.source_title),
+      sourceUrl: firstNonEmpty(item.sourceUrl, item.source_url),
     }
   })
 }
@@ -398,7 +465,7 @@ function writeGithubOutput(key, value) {
 function writeHeadersFile(outputDir) {
   const headersPath = path.join(outputDir, "_headers")
   const headers = [
-    `/${RSS_FILENAME}`,
+    "/*.xml",
     "  Content-Type: application/rss+xml; charset=utf-8",
     "  Cache-Control: public, max-age=300",
     "",
@@ -407,25 +474,72 @@ function writeHeadersFile(outputDir) {
   fs.writeFileSync(headersPath, headers)
 }
 
-async function main() {
-  const workspace = resolveWorkspace()
-  const codexOutputPath = path.resolve(workspace, requireEnv("CODEX_OUTPUT_FILE"))
-  const inputItemsPath = path.resolve(workspace, requireEnv("INPUT_ITEMS_FILE"))
+async function readExistingRssXml(outputPath, feedUrl, options = {}) {
+  if (fs.existsSync(outputPath)) {
+    return fs.readFileSync(outputPath, "utf8")
+  }
+
+  try {
+    return await fetchExistingRss(feedUrl, {
+      fetchImpl: options.fetchImpl,
+      timeoutMs: options.timeoutMs,
+    })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    console.warn(`Skip existing RSS history fetch: ${message}`)
+    return ""
+  }
+}
+
+function buildCurrentItemsFromFiles(workspace, options = {}) {
+  const itemsPath = toSafeString(options.itemsPath)
+
+  if (itemsPath) {
+    return buildDirectItems(readJson(path.resolve(workspace, itemsPath)), {
+      defaultPubDateMs: options.defaultPubDateMs,
+    })
+  }
+
+  const codexOutputPath = path.resolve(
+    workspace,
+    requireValue(options.codexOutputPath, "CODEX_OUTPUT_FILE")
+  )
+  const inputItemsPath = path.resolve(
+    workspace,
+    requireValue(options.inputItemsPath, "INPUT_ITEMS_FILE")
+  )
+
+  return buildCurrentItems(readJson(codexOutputPath), readJson(inputItemsPath))
+}
+
+async function buildAndWriteRssFeed(options = {}) {
+  const workspace = options.workspace || resolveWorkspace()
+  const rssFilename = normalizeRssFilename(options.rssFilename || RSS_FILENAME)
   const outputDir = path.resolve(
     workspace,
-    toSafeString(process.env.RSS_OUTPUT_DIR) || DEFAULT_OUTPUT_DIR
+    toSafeString(options.outputDir) || DEFAULT_OUTPUT_DIR
   )
-  const { origin, feedUrl } = normalizePublicUrl(requireEnv("RSS_PUBLIC_URL"))
-  const title = toSafeString(process.env.RSS_TITLE) || DEFAULT_TITLE
-  const description = toSafeString(process.env.RSS_DESCRIPTION) || DEFAULT_DESCRIPTION
-  const maxItems = Number(process.env.RSS_MAX_ITEMS || DEFAULT_MAX_ITEMS)
-  const maxAgeDays = Number(process.env.RSS_MAX_AGE_DAYS || 0)
+  const outputPath = path.join(outputDir, rssFilename)
+  const { origin, feedUrl } = normalizePublicUrl(
+    requireValue(options.publicUrl, "RSS_PUBLIC_URL"),
+    { rssFilename }
+  )
+  const title = toSafeString(options.title) || DEFAULT_TITLE
+  const description = toSafeString(options.description) || DEFAULT_DESCRIPTION
+  const maxItems = Number(options.maxItems || DEFAULT_MAX_ITEMS)
+  const maxAgeDays = Number(options.maxAgeDays || 0)
+  const generatedAt = options.generatedAt || new Date()
 
-  const payload = readJson(codexOutputPath)
-  const inputItems = readJson(inputItemsPath)
-  const currentItems = buildCurrentItems(payload, inputItems)
-  const existingXml = await fetchExistingRss(feedUrl, {
-    timeoutMs: Number(process.env.RSS_FETCH_TIMEOUT_MS || DEFAULT_FETCH_TIMEOUT_MS),
+  const currentItems = buildCurrentItemsFromFiles(workspace, {
+    itemsPath: options.itemsPath,
+    codexOutputPath: options.codexOutputPath,
+    inputItemsPath: options.inputItemsPath,
+    defaultPubDateMs: generatedAt.getTime(),
+  })
+  fs.mkdirSync(outputDir, { recursive: true })
+  const existingXml = await readExistingRssXml(outputPath, feedUrl, {
+    fetchImpl: options.fetchImpl,
+    timeoutMs: Number(options.fetchTimeoutMs || DEFAULT_FETCH_TIMEOUT_MS),
   })
   const oldItems = parseExistingRss(existingXml)
   const mergedItems = mergeItems(currentItems, oldItems, {
@@ -437,32 +551,60 @@ async function main() {
     description,
     siteUrl: origin,
     feedUrl,
-    generatedAt: new Date(),
+    generatedAt,
     items: mergedItems,
   })
 
-  fs.mkdirSync(outputDir, { recursive: true })
-  const outputPath = path.join(outputDir, RSS_FILENAME)
   fs.writeFileSync(outputPath, rssXml)
   writeHeadersFile(outputDir)
 
-  writeGithubOutput("output_dir", path.relative(workspace, outputDir))
-  writeGithubOutput("output_file", path.relative(workspace, outputPath))
-  writeGithubOutput("feed_url", feedUrl)
-  writeGithubOutput("item_count", String(mergedItems.length))
-  writeGithubOutput("new_item_count", String(currentItems.length))
-  writeGithubOutput("previous_item_count", String(oldItems.length))
+  return {
+    outputDir,
+    outputPath,
+    feedUrl,
+    itemCount: mergedItems.length,
+    newItemCount: currentItems.length,
+    previousItemCount: oldItems.length,
+  }
+}
+
+async function main() {
+  const workspace = resolveWorkspace()
+  const result = await buildAndWriteRssFeed({
+    workspace,
+    itemsPath: toSafeString(process.env.RSS_ITEMS_FILE),
+    codexOutputPath: toSafeString(process.env.CODEX_OUTPUT_FILE),
+    inputItemsPath: toSafeString(process.env.INPUT_ITEMS_FILE),
+    publicUrl: requireEnv("RSS_PUBLIC_URL"),
+    outputDir: toSafeString(process.env.RSS_OUTPUT_DIR),
+    rssFilename: toSafeString(process.env.RSS_FILENAME) || RSS_FILENAME,
+    title: toSafeString(process.env.RSS_TITLE),
+    description: toSafeString(process.env.RSS_DESCRIPTION),
+    maxItems: process.env.RSS_MAX_ITEMS,
+    maxAgeDays: process.env.RSS_MAX_AGE_DAYS,
+    fetchTimeoutMs: process.env.RSS_FETCH_TIMEOUT_MS,
+  })
+
+  writeGithubOutput("output_dir", path.relative(workspace, result.outputDir))
+  writeGithubOutput("output_file", path.relative(workspace, result.outputPath))
+  writeGithubOutput("feed_url", result.feedUrl)
+  writeGithubOutput("item_count", String(result.itemCount))
+  writeGithubOutput("new_item_count", String(result.newItemCount))
+  writeGithubOutput("previous_item_count", String(result.previousItemCount))
 
   console.log(
-    `Built RSS ${path.relative(workspace, outputPath)}: current=${currentItems.length} previous=${oldItems.length} merged=${mergedItems.length} url=${feedUrl}`
+    `Built RSS ${path.relative(workspace, result.outputPath)}: current=${result.newItemCount} previous=${result.previousItemCount} merged=${result.itemCount} url=${result.feedUrl}`
   )
 }
 
 module.exports = {
   RSS_FILENAME,
+  buildAndWriteRssFeed,
   buildCurrentItems,
+  buildDirectItems,
   fetchExistingRss,
   mergeItems,
+  normalizeRssFilename,
   normalizePublicUrl,
   parseExistingRss,
   renderRssXml,
