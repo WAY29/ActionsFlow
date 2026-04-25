@@ -18,7 +18,7 @@ printf '[START] platform=%s\n' "$PLATFORM"
 printf '[START] project=%s\n' "$PROJECT"
 printf '[START] port=%s:%s\n' "$HOST_PORT" "$CONTAINER_PORT"
 printf '[START] act image=%s\n' "$ACT_IMAGE"
-printf '[START] act isolate workspace=%s\n' "$PROJECT/.tmp/actionsflow-start-workspace"
+printf '[START] act isolate workspace parent=%s\n' "$PROJECT/.tmp/actionsflow-start-workspaces"
 
 if docker inspect "$CONTAINER" >/dev/null 2>&1; then
   printf '[START] removing existing container: %s\n' "$CONTAINER"
@@ -29,7 +29,8 @@ docker run -d --name "$CONTAINER" \
   --platform "$PLATFORM" \
   -e ACTIONSFLOW_ACT_ISOLATE=true \
   -e ACTIONSFLOW_ACT_PROJECT="$PROJECT" \
-  -e ACTIONSFLOW_ACT_WORKSPACE="$PROJECT/.tmp/actionsflow-start-workspace" \
+  -e ACTIONSFLOW_ACT_WORKSPACE_PARENT="$PROJECT/.tmp/actionsflow-start-workspaces" \
+  -e ACTIONSFLOW_ACT_WORKSPACE_PREFIX="start" \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -v "$PROJECT:$PROJECT" \
   -w "$PROJECT" \

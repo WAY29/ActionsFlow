@@ -4,6 +4,7 @@ set -eu
 REAL_ACT="${REAL_ACT:-/usr/local/bin/act.real}"
 WORKFLOWS_DIR=""
 HAS_BIND=false
+ISOLATED=false
 ARGS=("$@")
 
 for index in "${!ARGS[@]}"; do
@@ -37,19 +38,26 @@ if [ -n "$WORKFLOWS_DIR" ]; then
 fi
 
 if [ "${ACTIONSFLOW_ACT_ISOLATE:-false}" = "true" ] && [ "$HAS_BIND" = "true" ]; then
+  ISOLATED=true
   PROJECT_ROOT="${ACTIONSFLOW_ACT_PROJECT:-${ACTIONSFLOW_PROJECT:-$PWD}}"
-  DEBUG_WORKSPACE="${ACTIONSFLOW_ACT_WORKSPACE:-$PROJECT_ROOT/.tmp/actionsflow-act-workspace}"
+  WORKSPACE_PARENT="${ACTIONSFLOW_ACT_WORKSPACE_PARENT:-$PROJECT_ROOT/.tmp/actionsflow-act-workspaces}"
+  WORKSPACE_PREFIX="${ACTIONSFLOW_ACT_WORKSPACE_PREFIX:-run}"
+  DEBUG_WORKSPACE="$WORKSPACE_PARENT/$WORKSPACE_PREFIX-$$"
 
-  case "$DEBUG_WORKSPACE" in
+  case "$WORKSPACE_PARENT" in
     "$PROJECT_ROOT"/.tmp/*) ;;
     *)
-      printf '[ACT] error: ACTIONSFLOW_ACT_WORKSPACE must be under %s/.tmp: %s\n' "$PROJECT_ROOT" "$DEBUG_WORKSPACE" >&2
+      printf '[ACT] error: ACTIONSFLOW_ACT_WORKSPACE_PARENT must be under %s/.tmp: %s\n' "$PROJECT_ROOT" "$WORKSPACE_PARENT" >&2
       exit 1
       ;;
   esac
 
   rm -rf "$DEBUG_WORKSPACE"
   mkdir -p "$DEBUG_WORKSPACE"
+  cleanup_workspace() {
+    rm -rf "$DEBUG_WORKSPACE"
+  }
+  trap cleanup_workspace EXIT
   (
     cd "$PROJECT_ROOT"
     tar \
@@ -66,4 +74,8 @@ if [ "${ACTIONSFLOW_ACT_ISOLATE:-false}" = "true" ] && [ "$HAS_BIND" = "true" ];
   cd "$DEBUG_WORKSPACE"
 fi
 
-exec "$REAL_ACT" "${ARGS[@]}"
+if [ "$ISOLATED" = "true" ]; then
+  "$REAL_ACT" "${ARGS[@]}"
+else
+  exec "$REAL_ACT" "${ARGS[@]}"
+fi
