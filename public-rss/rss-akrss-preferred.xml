@@ -5,8 +5,15 @@
     <link>http://rss.longlone.de5.net</link>
     <description>Codex-curated preferred RSS items</description>
     <language>zh-CN</language>
-    <lastBuildDate>Sat, 25 Apr 2026 04:15:32 GMT</lastBuildDate>
+    <lastBuildDate>Sat, 25 Apr 2026 05:01:21 GMT</lastBuildDate>
     <atom:link href="http://rss.longlone.de5.net/rss-akrss-preferred.xml" rel="self" type="application/rss+xml"/>
+    <item>
+      <title>GPT-5.5 prompting guide</title>
+      <guid isPermaLink="true">https://simonwillison.net/2026/Apr/25/gpt-5-5-prompting-guide/#atom-everything</guid>
+      <pubDate>Sat, 25 Apr 2026 04:13:36 GMT</pubDate>
+      <link>https://simonwillison.net/2026/Apr/25/gpt-5-5-prompting-guide/#atom-everything</link>
+      <description>(8.2/10) 文章提炼了OpenAI面向GPT-5.5的提示建议，重点是长任务前先向用户发送简短进度更新。核心价值在于把提示技巧落到工具调用与代理交互体验上。</description>
+    </item>
     <item>
       <title>The people do not yearn for automation</title>
       <guid isPermaLink="true">https://simonwillison.net/2026/Apr/24/the-people-do-not-yearn-for-automation/#atom-everything</guid>
@@ -20,6 +27,13 @@
       <pubDate>Fri, 24 Apr 2026 16:40:45 GMT</pubDate>
       <link>https://www.wheresyoured.at/how-openai-kills-oracle/</link>
       <description>(8.8/10) 文章从算力、云和企业软件权力结构切入，讨论 OpenAI 如何侵蚀 Oracle 的位置。重点不是产品对比，而是 AI 基础设施重组后谁能掌握企业预算与平台控制权。</description>
+    </item>
+    <item>
+      <title>A Mutating AI Powered Virus</title>
+      <guid isPermaLink="true">https://geohot.github.io//blog/jekyll/update/2026/04/25/a-mutating-virus.html</guid>
+      <pubDate>Fri, 24 Apr 2026 16:00:00 GMT</pubDate>
+      <link>https://geohot.github.io//blog/jekyll/update/2026/04/25/a-mutating-virus.html</link>
+      <description>(8.4/10) 文章借莫拉维克悖论讨论机器能力演进，提出硅基系统最终目标可能是自我复制与脱离人类维持。它把AI从会思考会行动进一步推向会繁衍的激进设想。</description>
     </item>
     <item>
       <title>An update on recent Claude Code quality reports</title>
