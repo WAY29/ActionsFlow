@@ -4,6 +4,7 @@ set -Eeuo pipefail
 CONTAINER="${ACTIONSFLOW_CONTAINER:-actionsflow}"
 PROJECT="${ACTIONSFLOW_PROJECT:-/Users/lang/ActionsFlow}"
 DEST="${ACTIONSFLOW_DEST:-dist/manual-actionsflow}"
+DEBUG_WORKSPACE="${ACTIONSFLOW_DEBUG_WORKSPACE:-$PROJECT/.tmp/actionsflow-debug-workspace}"
 BUILD_TIMEOUT="${ACTIONSFLOW_BUILD_TIMEOUT:-900}"
 ACT_IMAGE="${ACTIONSFLOW_ACT_IMAGE:-ghcr.io/catthehacker/ubuntu:act-latest}"
 ARCH="${ACTIONSFLOW_ARCH:-linux/amd64}"
@@ -83,6 +84,7 @@ usage() {
   ACTIONSFLOW_CONTAINER=$CONTAINER
   ACTIONSFLOW_PROJECT=$PROJECT
   ACTIONSFLOW_DEST=$DEST
+  ACTIONSFLOW_DEBUG_WORKSPACE=$DEBUG_WORKSPACE
   ACTIONSFLOW_BUILD_TIMEOUT=$BUILD_TIMEOUT
   ACTIONSFLOW_ACT_IMAGE=$ACT_IMAGE
   ACTIONSFLOW_ARCH=$ARCH
@@ -156,6 +158,7 @@ container_bash() {
   docker exec -i \
     -e PROJECT="$PROJECT" \
     -e DEST="$DEST" \
+    -e DEBUG_WORKSPACE="$DEBUG_WORKSPACE" \
     -e BUILD_TIMEOUT="$BUILD_TIMEOUT" \
     -e ACT_IMAGE="$ACT_IMAGE" \
     -e ARCH="$ARCH" \
@@ -325,7 +328,7 @@ find "$DEST" -maxdepth 3 -type f -print | sort
 
 cmd_act() {
   ensure_container
-  log "ACT" "执行 $DEST/workflows"
+  log "ACT" "复制临时工作区并执行 $DEST/workflows"
   container_bash '
 set -Eeuo pipefail
 cd "$PROJECT"
@@ -333,9 +336,32 @@ test -d "$DEST/workflows" || {
   printf "[ERROR] 缺少 %s/workflows；先运行 build\n" "$DEST"
   exit 1
 }
+case "$DEBUG_WORKSPACE" in
+  "$PROJECT"/.tmp/*) ;;
+  *)
+    printf "[ERROR] ACTIONSFLOW_DEBUG_WORKSPACE 必须位于 %s/.tmp/ 下: %s\n" "$PROJECT" "$DEBUG_WORKSPACE"
+    exit 1
+    ;;
+esac
+rm -rf "$DEBUG_WORKSPACE"
+mkdir -p "$DEBUG_WORKSPACE"
+tar \
+  --exclude="./node_modules" \
+  --exclude="./.actionsflow" \
+  --exclude="./.tmp" \
+  --exclude="./.DS_Store" \
+  --exclude="./.env" \
+  --exclude="./.secrets" \
+  -cf - . | (cd "$DEBUG_WORKSPACE" && tar -xf -)
+cd "$DEBUG_WORKSPACE"
+test -d "$DEST/workflows" || {
+  printf "[ERROR] 临时工作区缺少 %s/workflows\n" "$DEST"
+  exit 1
+}
 if ! grep -q "^GITHUB_TOKEN=" "$DEST/.secrets" 2>/dev/null; then
   printf "[WARN] %s/.secrets 缺少 GITHUB_TOKEN；包含 git push 的 workflow 会认证失败\n" "$DEST"
 fi
+printf "[ACT] debug workspace=%s\n" "$DEBUG_WORKSPACE"
 cmd=(
   act
   --env LOCAL_ACTIONSFLOW_DEBUG=true
