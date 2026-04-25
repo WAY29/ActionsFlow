@@ -159,6 +159,7 @@ container_bash() {
     -e PROJECT="$PROJECT" \
     -e DEST="$DEST" \
     -e DEBUG_WORKSPACE="$DEBUG_WORKSPACE" \
+    -e ACTIONSFLOW_ACT_ISOLATE=false \
     -e BUILD_TIMEOUT="$BUILD_TIMEOUT" \
     -e ACT_IMAGE="$ACT_IMAGE" \
     -e ARCH="$ARCH" \
